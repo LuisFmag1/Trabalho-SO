@@ -11,19 +11,33 @@ const int NUM_CIDADES_POR_REINO = 20;
 const int NUM_URNAS_POR_CIDADE = 5;
 const int NUM_URNAS_TOTAL = NUM_REINOS * NUM_CIDADES_POR_REINO * NUM_URNAS_POR_CIDADE;
 
+//Como temos 5 urnas por cidade e cada cidade tem entre 1000 e 30k habitantes, entao cada urna tem entre 200 e 6000 votos
+const int MIN_VOTOS = 200;
+const int MAX_VOTOS = 6000;
+const int MIN_TEMPO = 2;
+const int MAX_TEMPO = 120;
+
 sem_t semaforo;
 vector<int> votos(NUM_REINOS, 0);
-bool votos_encerrados = false; // Flag para indicar que todas as threads de urnas terminaram
+bool votos_encerrados = false;     // indica quando todas as threads de una terminaram
+
+int calcularVotos() {
+    return MIN_VOTOS + (rand() % (MAX_VOTOS - MIN_VOTOS + 1));
+}   // Simula a contagem de votos entre 6000 e 200 porque cada cidade tem 5 urnas e a cidade tem de 1000 a 30000 habitantes
+
+int calcularTempoDeEspera() {
+    return MIN_TEMPO + (rand() % (MAX_TEMPO - MIN_TEMPO + 1));
+} // Gera tempo entre 2 e 120 segundos
 
 void* urnaEletronica(void* arg) {
     int reino = *((int*)arg);
-    int votos_urna = 200 + (rand() % (6000 - 200 + 1)); // Simula a contagem de votos entre 6000 e 200 porque cada cidade tem 5 urnas e a cidade tem de 30000 a 1000 habitantes
+    int votos_na_urna = calcularVotos();
+    int tempo_de_espera = calcularTempoDeEspera();
 
-    int tempo_de_espera = 2 + (rand() % (120 - 2 + 1)); // Gera tempo entre 2 e 120 segundos
     sleep(tempo_de_espera);
 
     sem_wait(&semaforo);
-    votos[reino] += votos_urna;
+    votos[reino] += votos_na_urna;
     sem_post(&semaforo);
 
     pthread_exit(NULL);
@@ -64,7 +78,7 @@ int main() {
         pthread_join(threads[i], NULL);
     }
 
-    // Define a flag para encerrar o monitoramento
+    // Define o encerramento do monitoramento
     votos_encerrados = true;
     pthread_join(monitor_thread, NULL);
 
